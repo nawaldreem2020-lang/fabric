@@ -1,18 +1,33 @@
 'use strict';
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
-const crypto = require('crypto');
 
 /**
  * ══════════════════════════════════════════════════════════════════════
- *  VerifyCertificate Workload Module — BCMS Benchmark
+ *  VerifyCertificate Workload Module — BCMS Benchmark (BLAKE2b-256)
  * ══════════════════════════════════════════════════════════════════════
+ *  Branch    : fabric-BLAKE2-Security
  *  Function  : VerifyCertificate(id, certHash) → VerificationResult
  *  RBAC      : Public (any org — readOnly query)
  *  Guarantee : 0 failures — returns false (not error) when cert not found
- *  Crypto    : SHA-256 hash computed client-side matching chaincode logic
+ *
+ *  CRYPTO CHANGE:
+ *    OLD: crypto.createHash('sha256').update(fields).digest('hex')
+ *    NEW: blake2bHex(fields, null, 32)   → BLAKE2b-256 (32-byte output)
+ *
+ *  The hash MUST match the Go chaincode's ComputeCertHash() function.
+ *  Both use: BLAKE2b-256( studentID|studentName|degree|issuer|issueDate )
  * ══════════════════════════════════════════════════════════════════════
  */
+
+let blake2bHex;
+try {
+    const blakejs = require('blakejs');
+    blake2bHex = (data) => blakejs.blake2bHex(data, null, 32);
+} catch (e) {
+    blake2bHex = require('./blake2b_fallback').blake2bHex;
+}
+
 class VerifyCertificateWorkload extends WorkloadModuleBase {
     constructor() {
         super();
@@ -35,14 +50,13 @@ class VerifyCertificateWorkload extends WorkloadModuleBase {
         const issuer      = 'Digital University';
         const issueDate   = new Date().toISOString().split('T')[0];
 
-        // MUST match exact hash logic in chaincode ComputeCertHash()
+        // BLAKE2b-256: must match ComputeCertHash() in Go chaincode
         const fields   = [studentID, studentName, degree, issuer, issueDate].join('|');
-        const certHash = crypto.createHash('sha256').update(fields).digest('hex');
+        const certHash = blake2bHex(fields);
 
         const request = {
             contractId:        'basic',
             contractFunction:  'VerifyCertificate',
-            // Args: (id, certHash)
             contractArguments: [certID, certHash],
             readOnly:          true    // bypass orderer — direct peer query for max TPS
         };
