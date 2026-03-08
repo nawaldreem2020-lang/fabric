@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+# ============================================================================
+#  fabric-BLAKE2-Security Branch — CA Enhanced Docker Compose
+#  Improvements:
+#    ✓ restart: unless-stopped for CA auto-recovery
+#    ✓ healthcheck: poll CA TLS port
+#    ✓ resource limits
+# ============================================================================
 
 networks:
   test:
@@ -13,6 +20,7 @@ services:
     image: hyperledger/fabric-ca:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-org1
@@ -28,11 +36,26 @@ services:
     container_name: ca_org1
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 7054 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
   ca_org2:
     image: hyperledger/fabric-ca:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-org2
@@ -48,11 +71,26 @@ services:
     container_name: ca_org2
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 8054 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
   ca_orderer:
     image: hyperledger/fabric-ca:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-orderer
@@ -68,3 +106,17 @@ services:
     container_name: ca_orderer
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 9054 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s

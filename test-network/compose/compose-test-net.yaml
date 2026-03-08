@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+# ============================================================================
+#  fabric-BLAKE2-Security Branch — Enhanced Docker Compose
+#  Improvements:
+#    ✓ CPU/RAM resource limits per container (prevents OOM & starvation)
+#    ✓ restart: unless-stopped for auto-recovery
+#    ✓ healthcheck on each service for Smart Wait in setup script
+#    ✓ GOMAXPROCS tuned for 64-bit BLAKE2b performance
+# ============================================================================
 
 volumes:
   orderer.example.com:
@@ -19,6 +27,7 @@ services:
     image: hyperledger/fabric-orderer:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_LOGGING_SPEC=INFO
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
@@ -56,17 +65,31 @@ services:
       - 9443:9443
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 7050 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   peer0.org1.example.com:
     container_name: peer0.org1.example.com
     image: hyperledger/fabric-peer:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       - GOMAXPROCS=4
-      #- FABRIC_LOGGING_SPEC=DEBUG
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -96,17 +119,31 @@ services:
       - 9444:9444
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 768M
+        reservations:
+          cpus: '0.5'
+          memory: 384M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 7051 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   peer0.org2.example.com:
     container_name: peer0.org2.example.com
     image: hyperledger/fabric-peer:latest
     labels:
       service: hyperledger-fabric
+    restart: unless-stopped
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       - GOMAXPROCS=4
-      #- FABRIC_LOGGING_SPEC=DEBUG
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
@@ -136,3 +173,17 @@ services:
       - 9445:9445
     networks:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 768M
+        reservations:
+          cpus: '0.5'
+          memory: 384M
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z localhost 9051 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
