@@ -1,0 +1,83 @@
+name: Generate BCMS Security & Caliper Reports
+
+on:
+  push:
+    branches: [main, genspark_ai_developer]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-reports:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install blake3 graphviz matplotlib pandas numpy 2>/dev/null || true
+
+      - name: Ensure results directory & Chart.js
+        run: |
+          mkdir -p results
+          if [ ! -f results/chart.umd.min.js ]; then
+            curl -sL "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" \
+              -o results/chart.umd.min.js
+          fi
+
+      - name: Generate Tamarin Security HTML Report
+        run: |
+          python3 generate_tamarin_report.py
+          ls -lh results/security_tamarin_report.html
+
+      - name: Generate Caliper Benchmark HTML Report
+        run: |
+          python3 generate_caliper_report.py
+          ls -lh results/caliper_report.html
+
+      - name: Upload reports as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bcms-reports
+          path: |
+            results/security_tamarin_report.html
+            results/caliper_report.html
+            results/caliper_simulated.json
+            results/chart.umd.min.js
+          retention-days: 30
+
+      - name: Prepare GitHub Pages
+        run: |
+          mkdir -p gh-pages
+          cp results/security_tamarin_report.html gh-pages/index.html
+          cp results/caliper_report.html gh-pages/caliper_report.html
+          cp results/chart.umd.min.js gh-pages/chart.umd.min.js
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh-pages/
+
+  deploy-pages:
+    needs: generate-reports
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
