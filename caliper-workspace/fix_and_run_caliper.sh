@@ -149,6 +149,8 @@ echo "✓ Network config generated."
 echo "Generating networks/connection-org1.yaml..."
 
 cat > networks/connection-org1.yaml << CONNECTION_EOF
+caliper:
+  blockchain: fabric
 name: test-network-org1
 version: 1.0.0
 client:
@@ -228,6 +230,8 @@ echo "✓ Org1 connection profile generated."
 echo "Generating networks/connection-org2.yaml..."
 
 cat > networks/connection-org2.yaml << CONNECTION_EOF
+caliper:
+  blockchain: fabric
 name: test-network-org2
 version: 1.0.0
 client:
