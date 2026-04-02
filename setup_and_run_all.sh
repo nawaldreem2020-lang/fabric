@@ -103,9 +103,10 @@ log_success "Environment cleaned successfully."
 log_step "PHASE 1: Permission Fix (chmod +x all executables)"
 
 log_info "Setting execute permissions on all shell scripts..."
+# Apply only to shell scripts and avoid expensive traversal of full node_modules tree.
 find "$ROOT_DIR" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
-find "$NETWORK_DIR/scripts" -type f -exec chmod +x {} \; 2>/dev/null || true
-find "$CALIPER_DIR" -name "*.js" -type f -exec chmod 644 {} \; 2>/dev/null || true
+find "$NETWORK_DIR/scripts" -maxdepth 3 -type f -exec chmod +x {} \; 2>/dev/null || true
+find "$CALIPER_DIR" -path "$CALIPER_DIR/node_modules" -prune -o -maxdepth 3 -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 chmod +x "$ROOT_DIR/setup_and_run_all.sh" 2>/dev/null || true
 
 log_success "All permissions fixed."
