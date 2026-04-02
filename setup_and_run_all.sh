@@ -505,6 +505,10 @@ if [ -f "$REPORT_FILE" ]; then
     # Copy to reports directory with timestamp
     cp "$REPORT_FILE" "${REPORTS_DIR}/report_blake2b_${TIMESTAMP}.html"
     log_success "Report saved to: ${REPORTS_DIR}/report_blake2b_${TIMESTAMP}.html"
+
+    # Update final symlink style report for easy access
+    cp "$REPORT_FILE" "${REPORTS_DIR}/report_blake2b_final.html"
+    log_success "Report updated: ${REPORTS_DIR}/report_blake2b_final.html"
 else
     log_warn "Native Caliper report not found. Generating custom BLAKE2b report..."
     
@@ -535,6 +539,12 @@ fi
 # Always generate custom BLAKE2b HTML report (the definitive one)
 log_info "Generating definitive BLAKE2b vs SHA-256 comparison report..."
 node "$ROOT_DIR/caliper-workspace/generate_blake2_report.js" 2>/dev/null || true
+
+# Ensure the final report alias is always refreshed when output exists
+if [ -f "$REPORT_FILE" ]; then
+    cp "$REPORT_FILE" "${REPORTS_DIR}/report_blake2b_final.html"
+    log_success "Report refreshed: ${REPORTS_DIR}/report_blake2b_final.html"
+fi
 
 # ── Console Summary ──────────────────────────────────────────────────────────
 echo ""
