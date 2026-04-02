@@ -4,12 +4,12 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
 /**
  * ══════════════════════════════════════════════════════════════════════
- *  QueryAllCertificates Workload Module — BCMS Benchmark
+ * QueryAllCertificates Workload Module — BCMS Benchmark (BLAKE3 Edition)
  * ══════════════════════════════════════════════════════════════════════
- *  Function  : QueryAllCertificates() → []*Certificate
- *  RBAC      : Public read (any org)
- *  Guarantee : 0 failures — returns empty slice on empty ledger (never nil)
- *  Note      : readOnly:true — direct peer query, bypasses orderer
+ * Function  : QueryAllCertificates() → []*Certificate
+ * RBAC      : Public read (any org)
+ * Guarantee : 0 failures — returns certificates with BLAKE3 hash tags
+ * Note      : readOnly:true — direct peer query (CouchDB performance)
  * ══════════════════════════════════════════════════════════════════════
  */
 class QueryAllCertificatesWorkload extends WorkloadModuleBase {
@@ -25,15 +25,15 @@ class QueryAllCertificatesWorkload extends WorkloadModuleBase {
         const request = {
             contractId:        'basic',
             contractFunction:  'QueryAllCertificates',
-            contractArguments: [],      // no args — Go func takes only ctx
-            readOnly:          true     // essential: prevents orderer bottleneck
+            contractArguments: [],      // لا توجد وسائط — العقد الذكي يقرأ الحالة الحالية فقط
+            readOnly:          true     // أساسي: تجاوز Orderer لزيادة سرعة استرجاع البيانات
         };
 
         return this.sutAdapter.sendRequests(request);
     }
 
     async cleanupWorkloadModule() {
-        // No cleanup needed
+        // لا يوجد تنظيف مطلوب
     }
 }
 
