@@ -4,12 +4,12 @@ const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
 /**
  * ══════════════════════════════════════════════════════════════════════
- *  RevokeCertificate Workload Module — BCMS Benchmark
+ * RevokeCertificate Workload Module — BCMS Benchmark (BLAKE3 Edition)
  * ══════════════════════════════════════════════════════════════════════
- *  Function  : RevokeCertificate(id) → error
- *  RBAC      : Org2MSP authorized (policy: OR('Org1MSP.peer','Org2MSP.peer'))
- *  Guarantee : 0 failures — idempotent (nil when cert not found or revoked)
- *  Invoker   : User1@org2.example.com
+ * Function  : RevokeCertificate(id) → error
+ * RBAC      : Org2MSP authorized (Org1 or Org2)
+ * Guarantee : 0 failures — idempotent
+ * Note      : Targets certificates issued with BLAKE3 IDs
  * ══════════════════════════════════════════════════════════════════════
  */
 class RevokeCertificateWorkload extends WorkloadModuleBase {
@@ -26,22 +26,23 @@ class RevokeCertificateWorkload extends WorkloadModuleBase {
     async submitTransaction() {
         this.txIndex++;
         const workerIdx = this.workerIndex || 0;
-        // Revoke certificates issued in the IssueCertificate round
-        // Uses same certID pattern as IssueCertificate workload
-        const certID = `CERT_${workerIdx}_${this.txIndex}`;
+
+        // يجب أن يطابق نمط الـ ID تماماً ما تم استخدامه في IssueCertificate (BLAKE3)
+        // أضفنا _B3_ لضمان استهداف الشهادات الصحيحة في قاعدة البيانات
+        const certID = `CERT_B3_${workerIdx}_${this.txIndex}`;
 
         const request = {
             contractId:        'basic',
             contractFunction:  'RevokeCertificate',
             contractArguments: [certID],
-            readOnly:          false    // write transaction — goes through orderer
+            readOnly:          false    // عملية كتابة — تمر عبر الـ Orderer والـ Endorsement
         };
 
         return this.sutAdapter.sendRequests(request);
     }
 
     async cleanupWorkloadModule() {
-        // No cleanup needed — idempotent design handles duplicates
+        // لا يوجد تنظيف مطلوب — التصميم يدعم التكرار (Idempotent)
     }
 }
 
